@@ -24,12 +24,7 @@
 #define F_MAX      1080
 
 #define BEGIN_FREQ 945
-#define BEGIN_VOL  1
-
-/*#define ITERATIONS 500000L    // number of iterations
-#define REFRESH_TFT 7500      // refresh bar every 7500 iterations
-#define ACTIVATED LOW 
-*/
+#define BEGIN_VOL  6
 
 #define FUN_TUNE 0x02
 #define FUN_VOL 0x01
@@ -57,6 +52,20 @@
 #define GUI_RDS   0x0008 //0b00001000
 #define GUI_TXT   0x0016 //0b00010000
 #define GUI_SEEK  0x0032 //0b00100000
+
+/*********************************************************
+ this macro to help to write code to ligth
+**********************************************************/
+#define _TFT ((struct datacls *)pvParameters)->tft
+#define _RADIO ((struct datacls *)pvParameters)->radio
+#define _ENCODER  ((struct datacls *)pvParameters)->encoder
+#define _DATA  ((struct data*)pmdata)
+
+#define GUI_CLR(x) UNSET_BITS(_DATA->render,x)
+#define GUI_UPD(x) SET_BITS(_DATA->render,x)  
+#define GUI_CHK(x) CHECK_BITS(mdata.render,x)
+/******************************************************** 
+*********************************************************/
 
 struct data
 {
@@ -94,210 +103,202 @@ long lastUpdateMillis = 0;
 int oldPosition = 0;
 
 void drawButtSeek(void* pvParameters,void* pmdata){  
-  if(((struct data*)pmdata)->function==FUN_SEEK){    
-    ((struct datacls *)pvParameters)->tft->fillRoundRect(0, 50, 50,25, 5, ST7735_WHITE);  
-    ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_GREEN);       
+  if(_DATA->function==FUN_SEEK){    
+    _TFT->fillRoundRect(0, 50, 50,25, 5, ST7735_WHITE);  
+    _TFT->setTextColor(ST7735_GREEN);       
   }else{
-    ((struct datacls *)pvParameters)->tft->fillRoundRect(0, 50, 50,25, 5, TFT_GREY);      
-    ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_WHITE);       
+    _TFT->fillRoundRect(0, 50, 50,25, 5, TFT_GREY);      
+    _TFT->setTextColor(ST7735_WHITE);       
   }  
-  ((struct datacls *)pvParameters)->tft->setTextSize(1);
-  ((struct datacls *)pvParameters)->tft->setCursor(5,60);  
-  ((struct datacls *)pvParameters)->tft->println("-SEEK+");  
-  if(((struct data*)pmdata)->function==FUN_SEEK){    
-    ((struct datacls *)pvParameters)->tft->drawRoundRect(0,50, 50, 25, 5, ST7735_BLUE);  
+  _TFT->setTextSize(1);
+  _TFT->setCursor(5,60);  
+  _TFT->println("-SEEK+");  
+  if(_DATA->function==FUN_SEEK){    
+    _TFT->drawRoundRect(0,50, 50, 25, 5, ST7735_BLUE);  
   }
   else{
-    ((struct datacls *)pvParameters)->tft->drawRoundRect(0,50, 50, 25, 5, ST7735_WHITE); 
+    _TFT->drawRoundRect(0,50, 50, 25, 5, ST7735_WHITE); 
   }
-  UNSET_BITS(((struct data*)pmdata)->render,GUI_SEEK);  
+  GUI_CLR(GUI_SEEK);  
 }
 
 void drawVol(void* pvParameters,void* pmdata){  
-  ((struct datacls *)pvParameters)->tft->fillRoundRect(80, 0, 160,10, 0, ST7735_BLACK);     
-  if(((struct data*)pmdata)->function==FUN_VOL){ 
-    ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_RED);   
+  _TFT->fillRoundRect(80, 0, 160,10, 0, ST7735_BLACK);     
+  if(_DATA->function==FUN_VOL){ 
+    _TFT->setTextColor(ST7735_RED);   
   }else{
-    ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_WHITE);       
+    _TFT->setTextColor(ST7735_WHITE);       
   }  
-  ((struct datacls *)pvParameters)->tft->setTextSize(1);
-  ((struct datacls *)pvParameters)->tft->setCursor(90, 0);  
-  ((struct datacls *)pvParameters)->tft->println("Vol");  
-  int x=((struct data*)pmdata)->volume;
+  _TFT->setTextSize(1);
+  _TFT->setCursor(90, 0);  
+  _TFT->println("Vol");  
+  int x= _DATA->volume;
   int vol = (55/15)*x;             
-  if(((struct data*)pmdata)->function==FUN_VOL){ 
-    ((struct datacls *)pvParameters)->tft->fillRoundRect(110, 0, vol, 10, 0, ST7735_WHITE);  
+  if(_DATA->function==FUN_VOL){ 
+    _TFT->fillRoundRect(110, 0, vol, 10, 0, ST7735_WHITE);  
   }else{
-    ((struct datacls *)pvParameters)->tft->fillRoundRect(110, 0, vol, 10, 0, ST7735_BLUE);            
+    _TFT->fillRoundRect(110, 0, vol, 10, 0, ST7735_BLUE);            
   }  
-  ((struct datacls *)pvParameters)->tft->setCursor(130, 0);  
-  ((struct datacls *)pvParameters)->tft->print(((struct data*)pmdata)->volume);
-  UNSET_BITS(((struct data*)pmdata)->render,GUI_VOL);        
+  _TFT->setCursor(130, 0);  
+  _TFT->print(_DATA->volume);
+  GUI_CLR(GUI_VOL);        
 }
 
 void drawRDSname(void* pvParameters,void* pmdata){    
-  ((struct datacls *)pvParameters)->tft->fillRoundRect(0, 90, 160, 20, 0, ST7735_BLACK);
-  ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_GREEN);
-  ((struct datacls *)pvParameters)->tft->setTextSize(2);  
-  ((struct datacls *)pvParameters)->tft->setCursor(0, 90);  
-  ((struct datacls *)pvParameters)->tft->println((((struct data*)pmdata)->RDSname));  
-  UNSET_BITS(((struct data*)pmdata)->render,GUI_RDS);
+  _TFT->fillRoundRect(0, 90, 160, 20, 0, ST7735_BLACK);
+  _TFT->setTextColor(ST7735_GREEN);
+  _TFT->setTextSize(2);  
+  _TFT->setCursor(0, 90);  
+  _TFT->println((_DATA->RDSname));  
+  GUI_CLR(GUI_RDS);
 }
 
 void drawRDStxt(void* pvParameters,void* pmdata){ 
-  ((struct datacls *)pvParameters)->tft->fillRoundRect(0, 110, 160, 20, 0, ST7735_BLACK);      
-  ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_WHITE);
-  ((struct datacls *)pvParameters)->tft->setTextSize(1);  
-  ((struct datacls *)pvParameters)->tft->setCursor(0, 110);  
-  ((struct datacls *)pvParameters)->tft->setTextWrap(true);
-  ((struct datacls *)pvParameters)->tft->println(((struct data*)pmdata)->pRadioText);
-  UNSET_BITS(((struct data*)pmdata)->render,GUI_TXT);
+  _TFT->fillRoundRect(0, 110, 160, 20, 0, ST7735_BLACK);      
+  _TFT->setTextColor(ST7735_WHITE);
+  _TFT->setTextSize(1);  
+  _TFT->setCursor(0, 110);  
+  _TFT->setTextWrap(true);
+  _TFT->println(_DATA->pRadioText);
+  GUI_CLR(GUI_TXT);
 }
                           
 static void vGUIrender(void* pvParameters){        
   struct data mdata;  
   for(;;){    
     xQueueReceive(queue_info, &mdata, ( portTickType ) 10);                           
-    if(CHECK_BITS(mdata.render,GUI_FRQ)) drawTuner(pvParameters,&mdata);        
-    if(CHECK_BITS(mdata.render,GUI_VOL)) drawVol(pvParameters,&mdata);           
-    if(CHECK_BITS(mdata.render,GUI_SEEK)) drawButtSeek(pvParameters,&mdata);              
-    if(CHECK_BITS(mdata.render,GUI_TXT)) drawRDStxt(pvParameters,&mdata);                
-    if(CHECK_BITS(mdata.render,GUI_RDS)) drawRDSname(pvParameters,&mdata);    
+    if(GUI_CHK(GUI_FRQ)) drawTuner(pvParameters,&mdata);        
+    if(GUI_CHK(GUI_VOL)) drawVol(pvParameters,&mdata);           
+    if(GUI_CHK(GUI_SEEK)) drawButtSeek(pvParameters,&mdata);              
+    if(GUI_CHK(GUI_TXT)) drawRDStxt(pvParameters,&mdata);                
+    if(GUI_CHK(GUI_RDS)) drawRDSname(pvParameters,&mdata);    
     xQueueOverwrite( queue_info, &mdata );  
     vTaskDelay(1);
   }      
 }
 
 void drawTuner(void* pvParameters,void* pmdata){   
-  UNSET_BITS(((struct data*)pmdata)->render,GUI_FRQ);
-  ((struct datacls *)pvParameters)->tft->fillRoundRect(0, 0, 80,10, 0, ST7735_BLACK);
-  ((struct datacls *)pvParameters)->tft->setCursor(0, 0);  
-  ((struct datacls *)pvParameters)->tft->setTextSize(1);
-  ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_WHITE);  
-  ((struct datacls *)pvParameters)->tft->print(((struct data*)pmdata)->channel);
-  ((struct datacls *)pvParameters)->tft->println("Mhz");        
-  ((struct datacls *)pvParameters)->tft->fillRoundRect(0, 10, 160, 30, 6, ST7735_WHITE);     
-  ((struct datacls *)pvParameters)->tft->drawLine(0, 20, 160,20, ST7735_BLACK);
-  ((struct datacls *)pvParameters)->tft->drawLine(0, 21, 160,21, ST7735_GREEN);
-  ((struct datacls *)pvParameters)->tft->drawLine(0, 22, 160,22, ST7735_BLACK);  
+  GUI_CLR(GUI_FRQ);
+  _TFT->fillRoundRect(0, 0, 80,10, 0, ST7735_BLACK);
+  _TFT->setCursor(0, 0);  
+  _TFT->setTextSize(1);
+  _TFT->setTextColor(ST7735_WHITE);  
+  _TFT->print(_DATA->channel);
+  _TFT->println("Mhz");        
+  _TFT->fillRoundRect(0, 10, 160, 30, 6, ST7735_WHITE);     
+  _TFT->drawLine(0, 20, 160,20, ST7735_BLACK);
+  _TFT->drawLine(0, 21, 160,21, ST7735_GREEN);
+  _TFT->drawLine(0, 22, 160,22, ST7735_BLACK);  
   for(int k=0;k<18;k++){
     if(k==4 || k==8 ||  k==12 ){
-      ((struct datacls *)pvParameters)->tft->drawLine(3+k*10,35,3+k*10,15, ST7735_GREEN);
+      _TFT->drawLine(3+k*10,35,3+k*10,15, ST7735_BLACK);
     }else{
-      ((struct datacls *)pvParameters)->tft->drawLine(3+k*10,27,3+k*10,15, ST7735_GREEN);  
+      _TFT->drawLine(3+k*10,27,3+k*10,15, ST7735_BLACK);  
     }
   }
-  ((struct datacls *)pvParameters)->tft->setCursor(0, 30);
-  ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_RED);
-  ((struct datacls *)pvParameters)->tft->setTextSize(0); 
-  ((struct datacls *)pvParameters)->tft->print("875"); 
-  ((struct datacls *)pvParameters)->tft->setCursor(75, 30);
-  ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_RED);
-  ((struct datacls *)pvParameters)->tft->setTextSize(0); 
-  ((struct datacls *)pvParameters)->tft->print("981"); 
-  ((struct datacls *)pvParameters)->tft->setCursor(140, 30);
-  ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_RED);
-  ((struct datacls *)pvParameters)->tft->setTextSize(0); 
-  ((struct datacls *)pvParameters)->tft->print("108"); 
+  _TFT->setCursor(0, 30);
+  _TFT->setTextColor(ST7735_RED);
+  _TFT->setTextSize(0); 
+  _TFT->print(F_MIN); 
+  _TFT->setCursor(75, 30);
+  _TFT->setTextColor(ST7735_RED);
+  _TFT->setTextSize(0); 
+  _TFT->print(F_MIN + ((F_MAX-F_MIN)/2)); 
+  _TFT->setCursor(135, 30);
+  _TFT->setTextColor(ST7735_RED);
+  _TFT->setTextSize(0); 
+  _TFT->print(F_MAX); 
   int fDelta = (F_MAX-F_MIN);
-  int  xFreq = (((float)158/(float)fDelta)*(fDelta-(F_MAX-((struct data*)pmdata)->channel)));  
-  if(((struct data*)pmdata)->function==FUN_TUNE){ 
-     ((struct datacls *)pvParameters)->tft->fillRect((int)xFreq,12,3, 26, ST7735_RED);  
+  int  xFreq = (((float)158/(float)fDelta)*(fDelta-(F_MAX-_DATA->channel)));  
+  if(_DATA->function==FUN_TUNE){ 
+     _TFT->fillRect((int)xFreq,12,3, 26, ST7735_RED);  
   }else{
-    ((struct datacls *)pvParameters)->tft->fillRect((int)xFreq,12,3, 26, ST7735_BLUE);      
+    _TFT->fillRect((int)xFreq,12,3, 26, ST7735_BLUE);      
   } 
 }
 
 void splashScreen(void* pvParameters,void* pmdata) {    
-  ((struct datacls *)pvParameters)->tft->setCursor(0, 0);
-  ((struct datacls *)pvParameters)->tft->fillScreen(ST7735_BLACK);
-  ((struct datacls *)pvParameters)->tft->setTextColor(ST7735_WHITE);
-  ((struct datacls *)pvParameters)->tft->setTextSize(1);  
-  ((struct datacls *)pvParameters)->tft->print("--");
-  ((struct datacls *)pvParameters)->tft->println("Mhz"); 
+  _TFT->setCursor(0, 0);
+  _TFT->fillScreen(ST7735_BLACK);
+  _TFT->setTextColor(ST7735_WHITE);
+  _TFT->setTextSize(1);  
+  _TFT->print("--");
+  _TFT->println("Mhz"); 
   drawTuner(pvParameters,pmdata);  
   drawVol(pvParameters,pmdata);   
   drawButtSeek(pvParameters,pmdata);
-  ((struct datacls *)pvParameters)->tft->drawLine(0, 85, 160,85, ST7735_YELLOW);
+  _TFT->drawLine(0, 85, 160,85, ST7735_YELLOW);
 }
 
-void InitGUI(void* pvParameters,void* pmdata){    
-  struct datacls *clsd=(struct datacls *)pvParameters; 
-  clsd->tft->initR(INITR_BLACKTAB);     
-  clsd->tft->fillScreen(ST7735_BLACK);
-  clsd->tft->setRotation(1);
+void InitGUI(void* pvParameters,void* pmdata){      
+  _TFT->initR(INITR_BLACKTAB);     
+  _TFT->fillScreen(ST7735_BLACK);
+  _TFT->setRotation(1);
   splashScreen(pvParameters,pmdata);  
 }
-
+void CleanMem(void* pmdata){
+  memset(_DATA->RDSname,0,9);
+  memset(_DATA->pRDSname,0,9);
+  memset(_DATA->RadioText,0,65);
+  memset(_DATA->pRadioText,0,65);
+}
 void EncoderGestRotation(void* pvParameters,void* pmdata){  
-  ((struct datacls *)pvParameters)->encoder->tick();
-  int newPosition = ((struct datacls *)pvParameters)->encoder->getPosition();   
+  _ENCODER->tick();
+  int newPosition = _ENCODER->getPosition();   
   if (oldPosition != newPosition) {        
     if (newPosition < oldPosition) { 
-      switch(((struct data*)pmdata)->function){     
+      switch(_DATA->function){     
         case FUN_TUNE:
-          memset(((struct data*)pmdata)->RDSname,0,9);
-          memset(((struct data*)pmdata)->pRDSname,0,9);
-          memset(((struct data*)pmdata)->RadioText,0,65);
-          memset(((struct data*)pmdata)->pRadioText,0,65);                                
-          ((struct data*)pmdata)->channel ++;
-          if (((struct data*)pmdata)->channel >=1081) ((struct data*)pmdata)->channel = 875;    
-          ((struct datacls *)pvParameters)->radio->setChannel(((struct data*)pmdata)->channel);                
-          SET_BITS(((struct data*)pmdata)->render,GUI_VOL);  
-          SET_BITS(((struct data*)pmdata)->render,GUI_FRQ);  
-          SET_BITS(((struct data*)pmdata)->render,GUI_RDS);
-          SET_BITS(((struct data*)pmdata)->render,GUI_TXT);
+          CleanMem(pmdata);                                      
+          _DATA->channel ++;
+          if (_DATA->channel >=1081) _DATA->channel = 875;    
+          _RADIO->setChannel(_DATA->channel);                
+          GUI_UPD(GUI_VOL);  
+          GUI_UPD(GUI_FRQ);  
+          GUI_UPD(GUI_RDS);
+          GUI_UPD(GUI_TXT);
           break;
         case FUN_VOL:
-          ((struct data*)pmdata)->volume ++;
-          if (((struct data*)pmdata)->volume >=16) ((struct data*)pmdata)->volume = 15;   
-          ((struct datacls *)pvParameters)->radio->setVolume(((struct data*)pmdata)->volume);                               
-          SET_BITS(((struct data*)pmdata)->render,GUI_VOL);       
+          _DATA->volume ++;
+          if (_DATA->volume >=16) _DATA->volume = 15;   
+          _RADIO->setVolume(_DATA->volume);                               
+          SET_BITS(_DATA->render,GUI_VOL);       
           break;
         case FUN_SEEK:
-          memset(((struct data*)pmdata)->RDSname,0,9);
-          memset(((struct data*)pmdata)->pRDSname,0,9);
-          memset(((struct data*)pmdata)->RadioText,0,65);
-          memset(((struct data*)pmdata)->pRadioText,0,65);   
-          ((struct data*)pmdata)->channel = ((struct datacls *)pvParameters)->radio->seekUp();                               
-          SET_BITS(((struct data*)pmdata)->render,GUI_RDS);
-          SET_BITS(((struct data*)pmdata)->render,GUI_FRQ);           
-          SET_BITS(((struct data*)pmdata)->render,GUI_VOL);  
-          SET_BITS(((struct data*)pmdata)->render,GUI_TXT);
+          CleanMem(pmdata);         
+          _DATA->channel = _RADIO->seekUp();                               
+          GUI_UPD(GUI_RDS);
+          GUI_UPD(GUI_FRQ);           
+          GUI_UPD(GUI_VOL);  
+          GUI_UPD(GUI_TXT);
           break;
       }
     }else {
-      switch(((struct data*)pmdata)->function){
-        case FUN_TUNE:      
-          memset(((struct data*)pmdata)->RDSname,0,9);
-          memset(((struct data*)pmdata)->pRDSname,0,9);
-          memset(((struct data*)pmdata)->RadioText,0,65);
-          memset(((struct data*)pmdata)->pRadioText,0,65);                        
-          ((struct data*)pmdata)->channel --; 
-          if (((struct data*)pmdata)->channel <=874) ((struct data*)pmdata)->channel = 1080;      
+      switch(_DATA->function){
+        case FUN_TUNE:  
+          CleanMem(pmdata);                               
+          _DATA->channel --; 
+          if (_DATA->channel <=874) _DATA->channel = 1080;      
           //mdata->var_channel = 1;          
-          ((struct datacls *)pvParameters)->radio->setChannel(((struct data*)pmdata)->channel);                     
-          SET_BITS(((struct data*)pmdata)->render,GUI_VOL);  
-          SET_BITS(((struct data*)pmdata)->render,GUI_FRQ);  
-          SET_BITS(((struct data*)pmdata)->render,GUI_RDS);
-          SET_BITS(((struct data*)pmdata)->render,GUI_TXT);  
+          _RADIO->setChannel(_DATA->channel);                     
+          GUI_UPD(GUI_VOL);  
+          GUI_UPD(GUI_FRQ);  
+          GUI_UPD(GUI_RDS);
+          GUI_UPD(GUI_TXT);  
           break;
        case FUN_VOL:
-          ((struct data*)pmdata)->volume --; 
-          if (((struct data*)pmdata)->volume <=0) ((struct data*)pmdata)->volume = 0;   
-          ((struct datacls *)pvParameters)->radio->setVolume(((struct data*)pmdata)->volume);    
-          SET_BITS(((struct data*)pmdata)->render,GUI_VOL);      
+          _DATA->volume --; 
+          if (_DATA->volume <=0) _DATA->volume = 0;   
+          _RADIO->setVolume(_DATA->volume);    
+          GUI_UPD(GUI_VOL);      
           break;
        case FUN_SEEK:
-          memset(((struct data*)pmdata)->RDSname,0,9);
-          memset(((struct data*)pmdata)->pRDSname,0,9);
-          memset(((struct data*)pmdata)->RadioText,0,65);
-          memset(((struct data*)pmdata)->pRadioText,0,65);   
-          ((struct data*)pmdata)->channel = ((struct datacls *)pvParameters)->radio->seekDown();                    
-          SET_BITS(((struct data*)pmdata)->render,GUI_VOL);  
-          SET_BITS(((struct data*)pmdata)->render,GUI_RDS);
-          SET_BITS(((struct data*)pmdata)->render,GUI_FRQ);            
-          SET_BITS(((struct data*)pmdata)->render,GUI_TXT);
+          CleanMem(pmdata);            
+          _DATA->channel = _RADIO->seekDown();                    
+          GUI_UPD(GUI_VOL);  
+          GUI_UPD(GUI_RDS);
+          GUI_UPD(GUI_FRQ);            
+          GUI_UPD(GUI_TXT);
           break;
       }
     }                      
@@ -306,18 +307,18 @@ void EncoderGestRotation(void* pvParameters,void* pmdata){
 }
 
 void buttonFunction(void* pmdata){    
-  ((struct data *)pmdata)->function ++;  
-  if (((struct data *)pmdata)->function >=3) ((struct data *)pmdata)->function = 0;   
-  SET_BITS(((struct data *)pmdata)->render,GUI_VOL);   
-  SET_BITS(((struct data *)pmdata)->render,GUI_FRQ);  
-  SET_BITS(((struct data *)pmdata)->render,GUI_SEEK);
+  _DATA->function ++;  
+  if (_DATA->function >=3) _DATA->function = 0;   
+  GUI_UPD(GUI_VOL);   
+  GUI_UPD(GUI_FRQ);  
+  GUI_UPD(GUI_SEEK);
 }
 
 void longButtonFunction(void* pmdata){    
-  ((struct data *)pmdata)->function = FUN_SEEK;  
-  SET_BITS(((struct data *)pmdata)->render,GUI_VOL);   
-  SET_BITS(((struct data *)pmdata)->render,GUI_FRQ);  
-  SET_BITS(((struct data *)pmdata)->render,GUI_SEEK);    
+  _DATA->function = FUN_SEEK;  
+  GUI_UPD(GUI_VOL);   
+  GUI_UPD(GUI_FRQ);  
+  GUI_UPD(GUI_SEEK);    
 }
 
 void EncoderGestButton(void *pvParameters,void* pmdata,void(*ButtonFunction)(void*),void (*LongButtonFunction)(void*)){
@@ -339,28 +340,27 @@ void EncoderGestButton(void *pvParameters,void* pmdata,void(*ButtonFunction)(voi
 
 void procRDS(void *pvParameters,void* pmdata,void *ticks){      
   long *startTicks =(long*)ticks ; 
-  if(((struct datacls *)pvParameters)->radio->readRDSRadioText(&((struct data*)pmdata)->RadioText[0]))    
+  if(_RADIO->readRDSRadioText(&_DATA->RadioText[0]))    
   {               
-    if(strlen(((struct data*)pmdata)->RadioText)>0){ 
-      strcpy(((struct data*)pmdata)->pRadioText,((struct data*)pmdata)->RadioText);                                                       
+    if(strlen(_DATA->RadioText)>0){ 
+      strcpy(_DATA->pRadioText,_DATA->RadioText);                                                       
     }    
-    SET_BITS(((struct data*)pmdata)->render,GUI_TXT);       
+    GUI_UPD(GUI_TXT);       
   }         
   long nowTicks = xTaskGetTickCount();        
   if ((nowTicks-*(startTicks)) > 3000) {                                         
-    ((struct datacls *)pvParameters)->radio->readRDSRadioStation(((struct data*)pmdata)->RDSname);                                      
-    if(strlen(((struct data*)pmdata)->RDSname)==0){
-      memcpy(((struct data*)pmdata)->RDSname,((struct data*)pmdata)->pRDSname,9);          
+    _RADIO->readRDSRadioStation(_DATA->RDSname);                                      
+    if(strlen(_DATA->RDSname)==0){
+      memcpy(_DATA->RDSname,_DATA->pRDSname,9);          
     }else{          
-      memcpy(((struct data*)pmdata)->pRDSname,((struct data*)pmdata)->RDSname,9);          
+      memcpy(_DATA->pRDSname,_DATA->RDSname,9);          
     }    
-    SET_BITS(((struct data*)pmdata)->render,GUI_RDS);                   
+    GUI_UPD(GUI_RDS);                   
     *(startTicks) = nowTicks;                  
   }    
 }
 
-static void vEncoder(void *pvParameters) {    
-    //struct datacls *clsd=(struct datacls *)pvParameters;       
+static void vEncoder(void *pvParameters) {              
     struct data mdata;
     long startTicks = xTaskGetTickCount();      
     for (;;) {
@@ -388,8 +388,7 @@ void setup(void)
   
   
   queue_info = xQueueCreate( queueSize_info, sizeof(struct data) );
-  if(queue_info == NULL){    
-  }  
+  if(queue_info == NULL){ }  
   xQueueSend(queue_info,&_mdata, ( portTickType ) 0  );
 
   InitGUI(&clsdata,&_mdata);
